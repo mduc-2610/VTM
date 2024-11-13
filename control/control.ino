@@ -8,12 +8,20 @@
 #define DHTPIN 23                 // Pin for DHT22
 #define DHTTYPE DHT11             // Sensor type DHT11
 #define LIGHT_PIN 25              // Pin for light sensor
-const int servoPin = 13;          // Pin for servo control
-const int rotationTime = 187;     // Time to rotate 90 degrees
+#define VALVE_PIN 19
+const int servoPin = 16;          // Pin for servo control
+const int rotationTime = (int) 187 / 2;   // Time to rotate 90 degrees
 
 // WiFi configuration
-const char* ssid = "Hieu Tran";             // Replace with your WiFi SSID
-const char* password = "hieu123456789";      // Replace with your WiFi password
+// const char* ssid = "Hieu Tran";             
+// const char* password = "hieu123456789";      
+
+// const char* ssid = "Khanh Van";             
+// const char* password = "88888888";
+
+const char* ssid = "Hiếu";
+const char* password = "20032003";
+
 const String baseUrl = "https://zvfd6g-3000.csb.app/";
 const String statisticsEndpoint = baseUrl + "statistics";
 const String servoEndpoint = baseUrl + "servo";
@@ -30,7 +38,7 @@ WebServer server(80);
 
 bool isAuto = false;
 bool isOpen = true;
-bool isWaterValveOpen = false;
+bool isWaterValveOpen = true;
 bool canRotate = true;
 bool isRotated = false;
 
@@ -40,7 +48,6 @@ void setup() {
     dht.begin();
     pinMode(LIGHT_PIN, INPUT);
 
-    // Connect to WiFi
     WiFi.begin(ssid, password);
     while (WiFi.status() != WL_CONNECTED) {
         delay(500);
@@ -101,8 +108,8 @@ void setup() {
 
     server.on("/api/waterValve", HTTP_POST, []() {
         String postBody = server.arg("plain");
-        isWaterValveOpen = !isWaterValveOpen;
-        waterValveHandleManual();  // Toggle valve state
+        // isWaterValveOpen = !isWaterValveOpen;
+        handleValveManual();
         Serial.println("Water Valve State Changed: " + String(isWaterValveOpen));
         Serial.println(postBody);
         server.sendHeader("Access-Control-Allow-Origin", "*");
@@ -178,14 +185,14 @@ void handleServoManual() {
 
 void handleValveManual() {
     Serial.println("Manual Valve Control Activated");
-    if (isValveOpen) {
+    if (isWaterValveOpen) {
         Serial.println("Opening Valve");
         digitalWrite(VALVE_PIN, HIGH);  
     } else {
         Serial.println("Closing Valve");
         digitalWrite(VALVE_PIN, LOW);   
     }
-    isValveOpen = !isValveOpen;
+    // isValveOpen = !isValveOpen;
 }
 
 void loop() {
@@ -212,7 +219,7 @@ void loop() {
     sendDataToStatisticsAPI(temperature, humidity, lightLevel);
 
     if (isAuto) {
-            Serial.println("Threshold servo");
+        Serial.println("Threshold servo");
         if ((temperature > TEMP_THRESHOLD && humidity > HUM_THRESHOLD) && canRotate && !isRotated) {
             Serial.println("Threshold exceeded - Rotating servo");
             myServo.write(0);
@@ -233,16 +240,17 @@ void loop() {
         }
     }
 
-    if (isAuto) {
-        Serial.println("Auto Mode Enabled - Checking Conditions");
-        if (humidity < HUM_THRESHOLD_VALVE && !isValveOpen) {
-            Serial.println("Humidity Below Valve Threshold - Opening Valve");
-            handleValveManual();
-        } else if (humidity >= HUM_THRESHOLD_VALVE && isValveOpen) {
-            Serial.println("Humidity Above Valve Threshold - Closing Valve");
-            handleValveManual();
-        }
-        // isValveOpen = !isValveOpen;
-    }
+    // if (isAuto) {
+    //     Serial.println("Auto Mode Enabled - Checking Conditions");
+    //     if (humidity < HUM_THRESHOLD_VALVE && !isValveOpen) {
+    //         Serial.println("Humidity Below Valve Threshold - Opening Valve");
+    //         handleValveManual();
+    //     } else if (humidity >= HUM_THRESHOLD_VALVE && isValveOpen) {
+    //         Serial.println("Humidity Above Valve Threshold - Closing Valve");
+    //         handleValveManual();
+    //     }
+    //     // isValveOpen = !isValveOpen;
+    // }
+    handleValveManual();
     delay(2000);  
 }
